@@ -1,5 +1,8 @@
 import React, { Component, PropTypes } from 'react';
 import { createContainer } from 'meteor/react-meteor-data';
+import {
+	Redirect,
+} from 'react-router-dom';
 
 import { Games } from '../../api/games.js';
 
@@ -11,6 +14,7 @@ class Lobby extends Component {
 		this.state = {invitee: ''};
 
 		this.handleChange = this.handleChange.bind(this);
+		this.startGame = this.startGame.bind(this);
 	}
 
 	componentDidUpdate() {
@@ -43,10 +47,24 @@ class Lobby extends Component {
 		);
 	}
 
+	startGame(e) {
+		const { game } = this.props;
+
+		Meteor.call('games.start', game._id, (err, res) => {
+			if (this.context.handleError(err)) return;
+			this.props.history.push('/stage/' + game._id);
+		});
+	}
+
 	render() {
-		const { game, loading } = this.props;
+		const { game, loading, location } = this.props;
 
 		if (loading) return <h2>Loading...</h2>;
+
+		if (game.level !== null) return <Redirect to={{
+      pathname: '/stage/'+game._id,
+      state: { from: location }
+    }}/>;
 
 		const lobbyPlayers = game.players.map(
 			(playerId, index) =>
@@ -76,6 +94,7 @@ class Lobby extends Component {
 					</label>
 					<input type="submit" value="Send Invitation" />
 				</form>
+				<button onClick={this.startGame}>Start Game</button>
 			</div>
 		);
 	}

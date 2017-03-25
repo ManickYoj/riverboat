@@ -1,6 +1,7 @@
 import { Meteor } from 'meteor/meteor';
 import { Mongo } from 'meteor/mongo';
 import { check } from 'meteor/check';
+import { rnorm } from 'randgen';
 
 export const Games = new Mongo.Collection('games');
 
@@ -44,6 +45,82 @@ if (Meteor.isServer) {
 			usersCursor,
 		];
 	});
+
+	Meteor.publish('game', function (gameId) {
+		const user = Meteor.users.findOne(this.userId);
+
+		if (user.games.indexOf(gameId) === -1) {
+			throw new Meteor.Error(
+				'Error in Lobby Subscription',
+				'You are not authorized to access this game\'s data.'
+			);
+		}
+
+		const gameCursor = Games.find(gameId);
+		const game = Games.findOne(gameId);
+		const usersCursor = Meteor.users.find(
+			{_id: {$in: game.players}},
+			{'fields': {username: 1}}
+		);
+
+		return gameData = [
+			gameCursor,
+			usersCursor,
+		];
+	});
+}
+
+function generateLevel() {
+	const riverConfig = {
+		baseLength: 50,
+		lengthScaling: 5,
+		avgWidth: 1,
+		centerVariation: 0.5,
+		widthVariation: .25,
+		startLength: 5,
+		endLength: 5,
+	};
+
+	const rc = riverConfig;
+	const index = 0;
+	const riverLength = rc.baseLength +
+		index * rc.lengthScaling;
+
+	const course = [];
+
+	let n;
+	for (i=0; i < riverLength-rc.startLength-rc.endLength; i++) {
+		do {
+			n = {
+				center: rnorm(0, rc.centerVariation),
+				width: rnorm(rc.avgWidth, rc.widthVariation),
+			};
+		} while (
+			n.center + n.width/2 >= 1 ||
+			n.center - n.width/2 <= -1
+		);
+
+		course.push(n);
+	}
+
+	for (i=0; i < rc.startLength; i++)
+		course.unshift({
+			center: 0,
+			width: rc.avgWidth,
+		});
+
+	for (i=0; i < rc.endLength; i++)
+		course.push({
+			center: 0,
+			width: rc.avgWidth,
+		});
+
+	const level = {
+		index,
+		course,
+	};
+
+	return level;
 }
 
 Meteor.methods({
@@ -65,6 +142,31 @@ Meteor.methods({
 				$addToSet: {games: res}
 			});
 		});
+	},
+
+	'games.start'(gameId) {
+		check(gameId, String);
+
+		const game = Games.findOne(gameId);
+		if (game.owner !== this.userId) {
+			throw new Meteor.Error(
+				'Game not started!',
+				'Cannot start game unless you are the game\'s owner'
+			);
+		}
+
+		if (game.level !== null) {
+			throw new Meteor.Error(
+				'Game already started!'
+			);
+		}
+
+		Games.update(gameId, {$set: {level: {
+			index: 0,
+			river: generateLevel(),
+		}}});
+
+		return gameId;
 	},
 
 	'games.remove'(gameId) {

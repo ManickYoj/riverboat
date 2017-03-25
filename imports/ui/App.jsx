@@ -52,9 +52,9 @@ export default class App extends Component {
 					<Switch>
 						<Route exact path="/" component={Home} />
 						<Route path="/login" component={Login} />
-						<PrivateRoute path="/menu" loading={loading} component={MainMenu} />
-						<PrivateRoute path="/lobby/:gameId" loading={loading} component={Lobby} />
-						<PrivateRoute path="/stage" loading={loading} component={Stage} />
+						<PrivateRoute path="/menu" component={MainMenu} />
+						<PrivateRoute path="/lobby/:gameId" component={Lobby} />
+						<PrivateRoute path="/stage/:gameId" component={Stage} />
 						<Route component={NotFound} />
 					</Switch>
 				</Router>

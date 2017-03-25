@@ -9,6 +9,7 @@
     "bcrypt": "^1.0.2",
     "classnames": "^2.2.5",
     "meteor-node-stubs": "~0.2.4",
+    "randgen": "^0.1.0",
     "react": "^15.4.2",
     "react-addons-css-transition-group": "^15.4.2",
     "react-addons-pure-render-mixin": "^15.4.2",
